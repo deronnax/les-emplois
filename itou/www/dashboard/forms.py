@@ -13,6 +13,7 @@ from itou.communications import registry as notification_registry
 from itou.communications.models import NotificationRecord, NotificationSettings
 from itou.directory.models import DirectoryProfile
 from itou.emails.utils import validate_email_address
+from itou.users.enums import IdentityProvider
 from itou.users.forms import JobSeekerProfileModelForm
 from itou.users.models import JobSeekerProfile, User
 from itou.utils.urls import get_zendesk_form_url
@@ -24,7 +25,11 @@ class SSOReadonlyMixin:
         if self.instance.has_sso_provider:
             # When users log in with a SSO, the fields populated by the provider should be
             # disabled (that’s a requirement on FranceConnect’s side).
-            disabled_fields = ["first_name", "last_name", "email", "birthdate", "title", "birth_name"]
+            disabled_fields = ["first_name", "last_name", "email", "birthdate", "title"]
+            if self.instance.identity_provider != IdentityProvider.FT_CONNECT:
+                # FT Connect does not return the birth name. Users
+                # should be able to update.
+                disabled_fields.append("birth_name")
             for name in self.fields.keys():
                 if name in disabled_fields:
                     self.fields[name].disabled = True
