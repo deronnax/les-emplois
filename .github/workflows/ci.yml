@@ -52,6 +52,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
+      - name: 🪣 Local S3 (RustFS) when the Cellar secrets are unavailable (PRs from forks)
+        if: ${{ env.CELLAR_ADDON_HOST_TEST == '' }}
+        run: |
+          docker run -d --name rustfs -p 127.0.0.1:9000:9000 \
+            -e RUSTFS_ACCESS_KEY=rustfsadmin -e RUSTFS_SECRET_KEY=rustfsadmin \
+            docker.io/rustfs/rustfs
+          timeout 60 sh -c 'until curl -s -o /dev/null http://127.0.0.1:9000/health; do sleep 1; done'
       - name: 🤹 Django tests
         run: make test TARGET="--shard=${{ matrix.shard }}/${{ strategy.job-total }}"
 
